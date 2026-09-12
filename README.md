@@ -143,16 +143,16 @@ a one-file change plus a container restart.
 
 ```mermaid
 flowchart LR
-    PG[("Ghost Postgres\noperational OLTP")]
+    PG[("Ghost Postgres<br/>operational OLTP")]
     subgraph DB["Databricks · Unity Catalog: walmart"]
-        BR[("🥉 bronze\nraw CDC landing\nDelta tables")]
-        ST[("🥈 silver_t\ncleansed, deduped, typed\nincremental MERGE")]
-        SB[("🥈 silver_b\nOne Big Table\norder-item grain")]
-        GD[("🥇 gold\nstar schema\n5 SCD2 dims + fact")]
+        BR[("🥉 bronze<br/>raw CDC landing<br/>Delta tables")]
+        ST[("🥈 silver_t<br/>cleansed, deduped, typed<br/>incremental MERGE")]
+        SB[("🥈 silver_b<br/>One Big Table<br/>order-item grain")]
+        GD[("🥇 gold<br/>star schema<br/>5 SCD2 dims + fact")]
     end
-    AF["Apache Airflow 3\nDocker · daily 11:00 UTC"]
+    AF["Apache Airflow 3<br/>Docker · daily 11:00 UTC"]
 
-    PG -->|"cursor-based CDC\nchanged rows only"| BR
+    PG -->|"cursor-based CDC<br/>changed rows only"| BR
     BR --> ST --> SB --> GD
     AF -.->|"triggers ingest job"| PG
     AF -.->|"runs dbt · gates on tests\nand freshness"| GD
