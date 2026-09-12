@@ -17,14 +17,20 @@ Databricks workspace provisioning if you don't have one).
 ## Step 1 — Create the source database and tables
 
 The project expects six source tables: `customers`, `orders`, `order_items`,
-`products`, `employees`, `stores`.
+`products`, `employees`, `stores`. Everything you need ships in the repo under
+[`source-database/`](../source-database/): the DDL (`ddl/walmart_schema.sql`),
+the full sample dataset (`data/*.csv`), and loader scripts.
 
 1. Create a [ghost.build](https://ghost.build) account (free tier is fine) — it's a
    hosted, agentic Postgres you can also query from an AI client via MCP.
-2. Create the tables (any DDL works; see the Walmart dataset DDL from the original
-   project material). Load the sample CSVs supplied with the dataset.
+2. Create the tables from `source-database/ddl/walmart_schema.sql` and load the
+   CSVs with `source-database/load_data.py` (details in that folder's README).
 3. Note the connection string — the Databricks ingestion will need host/port/user/
    password/database.
+
+> ⚡ **No source DB?** Run `source-database/push_to_bronze.py` instead — it seeds
+> `walmart.bronze` directly from the CSVs so you can skip straight to the dbt +
+> Airflow layers (static data, no CDC).
 
 > 💡 Because Ghost is agentic, you can literally ask its chat client things like
 > "what is the primary key of orders?" instead of inspecting schemas by hand.

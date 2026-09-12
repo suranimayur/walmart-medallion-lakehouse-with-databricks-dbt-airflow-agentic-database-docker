@@ -35,6 +35,12 @@ architecture, version-controlled transformations, data quality gates between
 layers, environment-driven configuration, and a hardened orchestrator — all
 open source, all reproducible from this repository.
 
+> 🙏 **Credits:** inspired by Ansh Lamba's end-to-end tutorial
+> ["Build a Complete Data Engineering Project — Walmart"](https://www.youtube.com/watch?v=ZEE-jNAthB0a),
+> which introduced the Ghost agentic database, the Walmart dataset, and the
+> Databricks + dbt + Airflow stack. The source DDL and sample dataset in
+> [`source-database/`](source-database/) come from that project's materials.
+
 ## How the pipeline works, end to end
 
 ### 1. Source system — operational Postgres
@@ -230,6 +236,7 @@ dbt docs generate && dbt docs serve
 
 ```
 walmart-medallion-lakehouse/
+├── source-database/            # agentic Postgres (Ghost) setup: DDL, sample CSVs, loaders
 ├── walmart_project/            # dbt project
 │   ├── models/
 │   │   ├── source.yml          #   bronze sources + freshness SLA
@@ -257,7 +264,7 @@ Follow these in order — each step builds on the previous one, taking you from
 |---|---|---|---|
 | 1️⃣ | **This README** | The big picture: architecture, layer-by-layer design, why each choice was made | 15 min |
 | 2️⃣ | [Architecture deep-dive](docs/architecture.md) | Data flow in detail, medallion design rationale, repo map | 20 min |
-| 3️⃣ | [Setup guide](docs/setup-guide.md) | **Hands-on:** build everything from zero — source DB, Databricks catalog & ingest job, `.env`, Docker, first run | 60–90 min |
+| 3️⃣ | [Setup guide](docs/setup-guide.md) + [source-database/](source-database/) | **Hands-on:** build everything from zero — source DB (or direct bronze seed), Databricks catalog & ingest job, `.env`, Docker, first run | 60–90 min |
 | 4️⃣ | [dbt guide](docs/dbt-guide.md) | Every model, macro, test, and snapshot in this repo — incremental MERGE, OBT, SCD2, freshness | 30 min |
 | 5️⃣ | [Airflow guide](docs/airflow-guide.md) | DAG anatomy, the custom Docker image, operating the platform | 20 min |
 | 6️⃣ | [Runbook](docs/runbook.md) | Day-2 operations — and **real** failure cases from this project with their diagnoses | 20 min |
