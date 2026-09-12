@@ -1,0 +1,17 @@
+# ==============================================================================
+# Custom Airflow image requirements
+# ------------------------------------------------------------------------------
+# Installed on top of the apache/airflow:3.3.1 base image during
+# `docker compose build` (see Dockerfile). Keep this list minimal — every
+# package here is baked into the image, so anything unused slows every rebuild.
+#
+# dbt + adapter versions MUST stay compatible with each other.
+# Compatibility matrix: https://docs.getdbt.com/docs/adapter-versions
+# ==============================================================================
+
+# --- dbt execution engine (runs inside Airflow workers via BashOperator) ------
+dbt-core>=1.12.3
+dbt-databricks>=1.12.5
+
+# --- Databricks SDK: used by the DAG to trigger + poll the CDC ingest job ------
+databricks-sdk>=0.117.0
