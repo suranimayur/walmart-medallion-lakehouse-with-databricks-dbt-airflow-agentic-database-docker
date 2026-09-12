@@ -1,0 +1,19 @@
+[project]
+name = "walmart-lakehouse-dev"
+version = "1.0.0"
+description = "Local development environment for the Walmart medallion lakehouse (dbt CLI + Airflow SDK tooling). Production Airflow runs in Docker — see walmart-airflow/."
+requires-python = ">=3.12"
+dependencies = [
+    "apache-airflow>=3.3.1",
+    "databricks-sdk>=0.117.0",
+    "dbt-core>=1.12.3",
+    "dbt-databricks>=1.12.5",
+]
+
+[dependency-groups]
+dev = [
+    "sqlfluff>=3.0",
+    "sqlfluff-templater-dbt>=3.0",
+]
+# SQL linting rules live in .sqlfluff (TOML cannot express [tool.sqlfluff.templater.dbt]
+# alongside the `templater = "dbt"` string key).

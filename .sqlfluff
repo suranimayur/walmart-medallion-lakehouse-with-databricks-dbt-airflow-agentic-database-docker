@@ -1,0 +1,10 @@
+# SQLFluff configuration — lint dbt models with:
+#   uv run sqlfluff lint walmart_project --templater dbt
+#   uv run sqlfluff fix  walmart_project --templater dbt
+[sqlfluff]
+templater = dbt
+dialect = databricks
+exclude_rules = L034  # column ordering nitpicks are not worth the churn
+
+[sqlfluff:templater:dbt]
+project_dir = walmart_project

@@ -1,0 +1,45 @@
+# ==============================================================================
+# Root .gitignore — Walmart Databricks dbt + Airflow project
+# ==============================================================================
+
+# ---------- Secrets & environment files (NEVER commit these) ------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# ---------- Python ------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.python-version
+
+# ---------- dbt build artifacts ----------------------------------------------
+target/
+dbt_packages/
+dbt_internal_packages/
+logs/
+# package-lock.yml IS committed: pins dbt package versions for reproducible dbt deps
+
+# ---------- dbt user-specific metadata ----------------------------------------
+.user.yml
+
+# ---------- Airflow runtime state ---------------------------------------------
+walmart-airflow/logs/
+walmart-airflow/config/airflow.cfg
+
+# ---------- IDE / OS ----------------------------------------------------------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ---------- Misc --------------------------------------------------------------
+.remember/
+*.log
