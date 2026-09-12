@@ -1,0 +1,51 @@
+# ==============================================================================
+# dbt project configuration — Walmart project (Databricks)
+# ==============================================================================
+# Materialization strategy per layer (medallion architecture):
+#   silver_t  — incremental tables: 1:1 cleansed copies of bronze with
+#               cursor-based WHERE + MERGE on each table's unique key.
+#   silver_b  — full table: the metadata-driven One Big Table is a single
+#               wide join; rebuilding it is cheap relative to incremental
+#               bookkeeping on a fan-out model.
+#   gold      — tables by default; the `ephimeral` subfolder is ephemeral
+#               (inlined as CTEs, nothing materialized). Gold dimensions are
+#               NOT built here — they are SCD2 snapshots (dbt snapshot).
+#
+# Credentials never live here: see profiles.yml (env_var based) and
+# walmart-airflow/.env.example.
+# ==============================================================================
+
+name: 'walmart_project'
+version: '1.0.0'
+profile: 'walmart_project'
+
+# Where dbt looks for each resource type
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:         # removed by `dbt clean`
+  - "target"
+  - "dbt_packages"
+
+models:
+  walmart_project:
+    silver_t:
+      +materialized: incremental
+      +schema: silver_t
+    silver_b:
+      +materialized: table
+      +schema: silver_b
+    gold:
+      +materialized: table
+      +schema: gold
+      # NOTE: folder is spelled "ephimeral" (historical). The key below must
+      # match the folder name exactly for the materialization override to
+      # apply — it previously read "ephemeral", so the eph_* models were
+      # silently materialized as tables. Keep both in sync, or rename the
+      # folder to "ephemeral" in a coordinated cleanup.
+      ephimeral:
+        +materialized: ephemeral

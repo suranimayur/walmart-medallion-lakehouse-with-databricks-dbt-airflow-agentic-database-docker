@@ -1,0 +1,30 @@
+# ==============================================================================
+# Snapshot: dim_orders (SCD Type 2) — COMPOSITE KEY
+# ==============================================================================
+# Order-context dimension: status, payment method and order-level timestamps.
+# payment_method is folded in here rather than given its own single-column
+# dimension (a "junk dimension" pattern — too few attributes to justify a
+# separate table).
+#
+# COMPOSITE unique_key — IMPORTANT
+#   eph_orders carries order-item grain (order_id + order_item_id), and the
+#   snapshot must match that grain with a composite key, otherwise dbt would
+#   collapse all items of an order onto one SCD2 row and silently DROP data.
+#
+# JOINING TO THE FACT
+#   dim_orders must be joined to fact_orders on BOTH keys:
+#       f.order_id = d.order_id AND f.order_item_id = d.order_item_id
+#   Joining on order_id alone multiplies fact rows. See docs/architecture.md.
+# ==============================================================================
+
+snapshots:
+  - name: dim_orders
+    description: "Order dimension (order-item grain) with full SCD2 history in walmart.gold."
+    relation: ref('eph_orders')
+    config:
+      schema: gold
+      database: walmart
+      unique_key: ['order_id', 'order_item_id']
+      strategy: timestamp
+      updated_at: order_updated_timestamp
+      dbt_valid_to_current: "to_date('9999-12-31')"

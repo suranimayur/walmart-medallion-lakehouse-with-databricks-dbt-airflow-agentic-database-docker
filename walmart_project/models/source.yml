@@ -1,0 +1,104 @@
+# ==============================================================================
+# dbt sources — bronze layer in the Databricks `walmart` catalog
+# ==============================================================================
+# The bronze tables are NOT built by dbt. They are created and kept
+# up-to-date by a Databricks Lakeflow ingestion job that pulls changes from
+# the source Postgres database (Ghost) using cursor-based CDC — see
+# walmart-airflow/dags/orchestrate.py (task `ingest_cdc`).
+#
+# dbt only declares them here so that:
+#   * models can reference them with source('walmart_databricks', '<table>'),
+#     giving full lineage in the docs/DAG, and
+#   * `dbt source freshness` can warn/fail the pipeline when bronze is stale
+#     (see the freshness block below and the source_freshness Airflow task).
+# ==============================================================================
+
+version: 2
+
+sources:
+  - name: walmart_databricks
+    description: >
+      Bronze-layer CDC landing zone. One table per source entity, maintained
+      by the Databricks Lakeflow ingest job orchestrated by Airflow.
+    database: walmart
+    schema: bronze
+
+    # Freshness: checked by `dbt source freshness` right after ingest and
+    # before any silver model runs. Thresholds are env-configurable so the
+    # SLA can be tuned without code changes:
+    #   SOURCE_FRESHNESS_WARN_DAYS  (default 7)   -> task succeeds with a warning
+    #   SOURCE_FRESHNESS_ERROR_DAYS (default 365) -> task fails the pipeline
+    # Defaults fit this project's STATIC demo dataset (the source DB rarely
+    # changes, so bronze ages indefinitely): warnings stay visible in logs,
+    # but the pipeline is not failed by data that is legitimately old.
+    # For a live source with daily changes, tighten to e.g. warn 1 / error 2.
+    # (dbt >= 1.10 requires freshness/loaded_at_field under `config`.)
+    config:
+      freshness:
+        warn_after: {count: "{{ env_var('SOURCE_FRESHNESS_WARN_DAYS', '7') | as_number }}", period: day}
+        error_after: {count: "{{ env_var('SOURCE_FRESHNESS_ERROR_DAYS', '365') | as_number }}", period: day}
+      loaded_at_field: updated_timestamp
+
+    tables:
+      - name: orders
+        description: "Order headers: one row per order (customer, store, totals, status)."
+        columns:
+          - name: order_id
+            description: "Primary key. Natural key from the source system."
+            data_tests: [not_null, unique]
+          - name: customer_id
+            description: "FK to customers; the buyer of this order."
+          - name: store_id
+            description: "FK to stores; the store that booked the order."
+          - name: total_amount
+            description: "Order-level total amount charged."
+          - name: updated_timestamp
+            description: "CDC cursor column — also used by source freshness."
+
+      - name: customers
+        description: "Customer master data: names, contact details, geography."
+        columns:
+          - name: customer_id
+            description: "Primary key."
+            data_tests: [not_null, unique]
+
+      - name: products
+        description: "Product master data: name, category, brand, list price."
+        columns:
+          - name: product_id
+            description: "Primary key."
+            data_tests: [not_null, unique]
+          - name: price
+            description: "List price; must never be negative."
+            data_tests:
+              - dbt_utils.expression_is_true:
+                  arguments:
+                    expression: ">= 0"
+
+      - name: employees
+        description: "Store employees (cashiers etc.). Junction entity via store_id."
+        columns:
+          - name: employee_id
+            description: "Primary key."
+            data_tests: [not_null, unique]
+
+      - name: stores
+        description: "Physical store locations."
+        columns:
+          - name: store_id
+            description: "Primary key."
+            data_tests: [not_null, unique]
+
+      - name: order_items
+        description: "Order line items: one row per product line on an order."
+        columns:
+          - name: order_item_id
+            description: "Primary key."
+            data_tests: [not_null, unique]
+          - name: order_id
+            description: "FK to orders; the order this line belongs to."
+            data_tests:
+              - relationships:
+                  arguments:
+                    to: source('walmart_databricks', 'orders')
+                    field: order_id

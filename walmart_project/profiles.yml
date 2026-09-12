@@ -1,0 +1,48 @@
+# ==============================================================================
+# dbt profile — Walmart project (Databricks adapter)
+# ==============================================================================
+# All connection values are read from environment variables so that no secret
+# is ever hardcoded in this file (it is committed to git).
+#
+# HOW VALUES ARE RESOLVED
+#   - Local development:  export the DATABRICKS_* variables (or source .env)
+#     before running dbt commands.
+#   - Inside Airflow:     the .env file is loaded by docker compose into every
+#     container, so workers already have the variables in their environment.
+#
+# See walmart-airflow/.env.example for where each value comes from.
+# ==============================================================================
+walmart_project:
+  outputs:
+    dev:
+      # Unity Catalog that holds the bronze/silver_t/silver_b/gold schemas
+      catalog: walmart
+
+      # Workspace host WITHOUT the https:// scheme
+      host: "{{ env_var('DATABRICKS_HOST') }}"
+
+      # SQL warehouse HTTP path: Compute -> warehouse -> Connection details
+      http_path: "{{ env_var('DATABRICKS_HTTP_PATH') }}"
+
+      # Personal Access Token (rotate regularly; prefer OAuth M2M in prod)
+      token: "{{ env_var('DATABRICKS_TOKEN') }}"
+
+      # Fallback schema for models without a custom generate_schema_name()
+      schema: dbt_schema
+
+      # Keep low while running on a small free-edition warehouse; raise for prod
+      threads: 1
+      type: databricks
+
+    # Template for future environments: copy `dev`, override schema/catalog,
+    # and point at a prod warehouse via separate env vars if needed.
+    # prod:
+    #   catalog: walmart
+    #   host: "{{ env_var('DATABRICKS_HOST') }}"
+    #   http_path: "{{ env_var('DATABRICKS_HTTP_PATH') }}"
+    #   token: "{{ env_var('DATABRICKS_TOKEN') }}"
+    #   schema: dbt_schema
+    #   threads: 8
+    #   type: databricks
+
+  target: dev

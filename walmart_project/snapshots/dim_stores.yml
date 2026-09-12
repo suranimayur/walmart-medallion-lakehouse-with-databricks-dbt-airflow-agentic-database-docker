@@ -1,0 +1,19 @@
+# ==============================================================================
+# Snapshot: dim_stores (SCD Type 2)
+# ==============================================================================
+# Store dimension: location attributes only. Small, slow-changing table —
+# the SCD2 machinery costs little here but keeps the model consistent with
+# the other dimensions.
+# ==============================================================================
+
+snapshots:
+  - name: dim_stores
+    description: "Store dimension with full SCD2 history in walmart.gold."
+    relation: ref('eph_stores')
+    config:
+      schema: gold
+      database: walmart
+      unique_key: store_id
+      strategy: timestamp
+      updated_at: store_updated_timestamp
+      dbt_valid_to_current: "to_date('9999-12-31')"

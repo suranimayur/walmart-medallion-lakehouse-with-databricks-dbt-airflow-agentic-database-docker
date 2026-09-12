@@ -1,0 +1,32 @@
+# ==============================================================================
+# Snapshot: dim_customers (SCD Type 2)
+# ==============================================================================
+# dbt snapshots implement SCD2: when tracked attributes change, the old row is
+# closed (dbt_valid_to set) and a new row is opened (dbt_valid_from = change
+# time), preserving full customer history in walmart.gold.dim_customers.
+#
+# Key config decisions:
+#   * relation   — source of rows: the EPHEMERAL model eph_customers, which
+#                  dedupes the OBT back to customer grain.
+#   * unique_key — one row per customer.
+#   * strategy: timestamp + updated_at — dbt compares the column value between
+#     runs; any change (not just the timestamp) opens a new SCD2 version.
+#     NEVER point updated_at at a current_timestamp() column — it would change
+#     every run and fabricate history.
+#   * dbt_valid_to_current — open rows get 9999-12-31 instead of NULL, so
+#     "current record" filters are a simple dbt_valid_to = '9999-12-31'.
+#
+# Hard-codes the `walmart` catalog (as everywhere else) — update if renamed.
+# ==============================================================================
+
+snapshots:
+  - name: dim_customers
+    description: "Customer dimension with full SCD2 history in walmart.gold."
+    relation: ref('eph_customers')
+    config:
+      schema: gold
+      database: walmart
+      unique_key: customer_id
+      strategy: timestamp
+      updated_at: customer_updated_timestamp
+      dbt_valid_to_current: "to_date('9999-12-31')"

@@ -1,0 +1,20 @@
+# ==============================================================================
+# dbt project .gitignore
+# ------------------------------------------------------------------------------
+# The root .gitignore already covers these; this file keeps the dbt project
+# self-contained so it also stays clean if copied out or vendored elsewhere.
+# ==============================================================================
+
+# Secrets — the Databricks token must never be committed
+.env
+profiles.override.yml
+
+# Build artifacts
+target/
+dbt_packages/
+dbt_internal_packages/
+logs/
+package-lock.yml
+
+# Local, user-specific dbt metadata
+.user.yml

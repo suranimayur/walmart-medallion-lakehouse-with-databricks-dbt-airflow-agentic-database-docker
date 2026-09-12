@@ -1,0 +1,23 @@
+# ==============================================================================
+# Snapshot: dim_employees (SCD Type 2)
+# ==============================================================================
+# Employee dimension: store staff identity, role, salary. Salary history is a
+# classic SCD2 use case (point-in-time reporting / audit).
+#
+# Design trade-off: employee -> order is indirect (employees belong to stores;
+# orders are booked at stores). Keeping this dimension denormalizes
+# "which staff belong to the store that booked the order" into a single join
+# from the fact, avoiding a snowflake hop through dim_stores.
+# ==============================================================================
+
+snapshots:
+  - name: dim_employees
+    description: "Employee dimension with full SCD2 history in walmart.gold."
+    relation: ref('eph_employees')
+    config:
+      schema: gold
+      database: walmart
+      unique_key: employee_id
+      strategy: timestamp
+      updated_at: employee_updated_timestamp
+      dbt_valid_to_current: "to_date('9999-12-31')"

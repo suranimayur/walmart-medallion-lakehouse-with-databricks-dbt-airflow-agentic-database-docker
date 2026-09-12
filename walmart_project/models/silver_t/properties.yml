@@ -1,0 +1,38 @@
+# ==============================================================================
+# Model properties & data tests — silver_t (technical) layer
+# ==============================================================================
+# Contract checks enforced after every silver_t build (see the
+# silver_technical_tests Airflow task). Failures stop the pipeline before the
+# business layer is built on top of bad data.
+#
+# Naming: models ending in _t are "technical" silver models — 1:1 cleansed
+# copies of their bronze source tables.
+# ==============================================================================
+
+version: 2
+
+models:
+  - name: products_t
+    description: "Cleansed 1:1 copy of bronze products, plus a processed_at audit column."
+    columns:
+      - name: product_id
+        description: "Primary key."
+        data_tests: [not_null, unique]
+      - name: price
+        description: "List price; guarded by the negative-price guard test."
+        data_tests:
+          # Guard against corrupted upstream data (negative prices can silently
+          # wreck revenue reporting downstream).
+          # NOTE: dbt passes the column name automatically to this generic test,
+          # so the expression must be operator-only (">= 0"), NOT "price >= 0"
+          # (which would render `price price >= 0` and fail to parse).
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+
+  - name: orders_t
+    description: "Cleansed 1:1 copy of bronze orders, plus a processed_at audit column."
+    columns:
+      - name: order_id
+        description: "Primary key."
+        data_tests: [not_null, unique]

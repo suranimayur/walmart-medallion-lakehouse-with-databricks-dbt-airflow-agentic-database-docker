@@ -1,0 +1,25 @@
+# ==============================================================================
+# Snapshot: dim_products (SCD Type 2)
+# ==============================================================================
+# Product dimension: name, category, brand and list price (a product
+# ATTRIBUTE, not an order measure — money measures live in fact_orders).
+# History matters when list prices change and old orders must be reported
+# against the price at sale time.
+#
+# The source is the eph_products ephemeral model, which now contains only
+# product-context columns (a leaked customer_id was removed there — see that
+# file). With strategy: timestamp, dbt re-opens a version whenever ANY tracked
+# attribute changes, not only when updated_at moves.
+# ==============================================================================
+
+snapshots:
+  - name: dim_products
+    description: "Product dimension with full SCD2 history in walmart.gold."
+    relation: ref('eph_products')
+    config:
+      schema: gold
+      database: walmart
+      unique_key: product_id
+      strategy: timestamp
+      updated_at: product_updated_timestamp
+      dbt_valid_to_current: "to_date('9999-12-31')"
