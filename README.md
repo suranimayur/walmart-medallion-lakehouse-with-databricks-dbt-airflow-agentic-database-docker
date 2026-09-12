@@ -13,6 +13,9 @@ operational database to an analytics-ready star schema — automatically, every 
 
 *Databricks · dbt · Apache Airflow · Delta Lake · Change Data Capture · Slowly Changing Dimensions*
 
+🧭 **New here?** Follow the [Learning path](#learning-path-zero-to-end) below —
+it walks you through this repository from zero to a running pipeline.
+
 </div>
 
 ---
@@ -136,33 +139,55 @@ a one-file change plus a container restart.
 
 ## Architecture
 
+### System flow — source to star schema
+
+```mermaid
+flowchart LR
+    PG[("Ghost Postgres\noperational OLTP")]
+    subgraph DB["Databricks · Unity Catalog: walmart"]
+        BR[("🥉 bronze\nraw CDC landing\nDelta tables")]
+        ST[("🥈 silver_t\ncleansed, deduped, typed\nincremental MERGE")]
+        SB[("🥈 silver_b\nOne Big Table\norder-item grain")]
+        GD[("🥇 gold\nstar schema\n5 SCD2 dims + fact")]
+    end
+    AF["Apache Airflow 3\nDocker · daily 11:00 UTC"]
+
+    PG -->|"cursor-based CDC\nchanged rows only"| BR
+    BR --> ST --> SB --> GD
+    AF -.->|"triggers ingest job"| PG
+    AF -.->|"runs dbt · gates on tests\nand freshness"| GD
 ```
-                        ┌─────────────────────────────┐
-                        │   Ghost Postgres (source)   │
-                        │   operational OLTP database │
-                        └──────────────┬──────────────┘
-                                       │  cursor-based CDC
-                                       ▼
-┌──────────────────────────────────────────────────────────────────┐
-│               DATABRICKS  ·  Unity Catalog: walmart              │
-│                                                                  │
-│  bronze     raw CDC landing zone (Delta tables)     ← Lakeflow   │
-│     │                                                          │
-│  silver_t   cleansed, deduped, typed 1:1 models     ← dbt        │
-│     │             incremental MERGE on business keys             │
-│  silver_b   One Big Table — order-item grain        ← dbt        │
-│     │                                                          │
-│  gold       ⭐ star schema                           ← dbt        │
-│     • 5 SCD2 snapshot dimensions                                │
-│     • 1 incremental fact table                                  │
-└────────────────────────────▲─────────────────────────────────────┘
-                             │  triggers · monitors · gates
-                  ┌──────────┴───────────┐
-                  │   Apache Airflow 3   │
-                  │   Docker Compose     │
-                  │   daily @ 11:00 UTC  │
-                  └──────────────────────┘
+
+### Gold layer — the star schema
+
+```mermaid
+erDiagram
+    dim_customers ||--o{ fact_orders : places
+    dim_products ||--o{ fact_orders : "appears in"
+    dim_stores ||--o{ fact_orders : hosts
+    dim_employees ||--o{ fact_orders : processes
+    dim_orders ||--o{ fact_orders : "status history (SCD2)"
+
+    fact_orders {
+        int order_item_id PK
+        int order_id FK
+        int customer_id FK
+        int product_id FK
+        int store_id FK
+        int employee_id FK
+        decimal quantity
+        decimal net_amount
+    }
+    dim_orders {
+        int order_id PK
+        varchar status
+        timestamp dbt_valid_from
+        timestamp dbt_valid_to
+    }
 ```
+
+*(Diagrams render natively on GitHub. The DAG task graph is in section 7 above;*
+*[docs/architecture.md](docs/architecture.md) has the fully annotated version.)*
 
 ## Quick start
 
@@ -222,6 +247,25 @@ walmart-medallion-lakehouse/
 │   └── .env.example            #   credential template (real .env git-ignored)
 └── docs/                       # seven in-depth guides
 ```
+
+## Learning path: zero to end
+
+Follow these in order — each step builds on the previous one, taking you from
+*"what is this?"* to *"I built, ran, and operate this pipeline myself."*
+
+| Step | Read / do | What you'll learn | Est. time |
+|---|---|---|---|
+| 1️⃣ | **This README** | The big picture: architecture, layer-by-layer design, why each choice was made | 15 min |
+| 2️⃣ | [Architecture deep-dive](docs/architecture.md) | Data flow in detail, medallion design rationale, repo map | 20 min |
+| 3️⃣ | [Setup guide](docs/setup-guide.md) | **Hands-on:** build everything from zero — source DB, Databricks catalog & ingest job, `.env`, Docker, first run | 60–90 min |
+| 4️⃣ | [dbt guide](docs/dbt-guide.md) | Every model, macro, test, and snapshot in this repo — incremental MERGE, OBT, SCD2, freshness | 30 min |
+| 5️⃣ | [Airflow guide](docs/airflow-guide.md) | DAG anatomy, the custom Docker image, operating the platform | 20 min |
+| 6️⃣ | [Runbook](docs/runbook.md) | Day-2 operations — and **real** failure cases from this project with their diagnoses | 20 min |
+| 7️⃣ | [Security guide](docs/security.md) | Secrets management, token rotation, keeping credentials out of git | 10 min |
+| 8️⃣ | [Git guide](docs/git-guide.md) | Release conventions, how this repo is structured for collaboration | 5 min |
+
+> 💡 **Shortcut for the impatient:** run steps 1 → 3 and you'll have the
+> pipeline live in your own Databricks workspace; the rest deepens mastery.
 
 ## Documentation
 
